@@ -3,125 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animated Login & Registration Form</title>
+    <title>Login - Laravel Auth</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="{{ asset('css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <div class="wrapper">
-        
         <div class="form-wrapper sign-in active">
-            <form method="POST" action="{{ route('login.post') }}">
+            <form id="loginForm">
                 @csrf
                 <h2>Sign In</h2>
                 <div class="input-group">
-                    <input type="email" name="correo" value="{{ old('correo') }}" required>
+                    <input type="email" name="email" id="email" required>
                     <label>Email</label>
                 </div>
                 <div class="input-group">
-                    <input type="password" name="contrasena" required>
+                    <input type="password" name="password" id="password" required>
                     <label>Password</label>
                 </div>
-                <button type="submit">Sign In</button>
-                <div class="signUp-link">
-                    <p><a href="#" class="forgotPassword-link">Forgot Password?</a></p>
-                    <p>Don't have an account? <a href="#" class="signUpBtn-link">Sign Up</a></p>
-                </div>
-            </form>
-        </div>
+                
+                <button type="submit" id="btnLogin">Sign In</button>
 
-        <div class="form-wrapper sign-up">
-            <form method="POST" action="{{ route('registro.post') }}">
-                @csrf
-                <h2>Sign Up</h2>
-                <div class="input-group">
-                    <input type="text" name="usuario" value="{{ old('usuario') }}" required>
-                    <label>Username</label>
+                <div class="social-platform">
+                    <p>Or sign in with</p>
+                    <div class="social-icons">
+                        <a href="javascript:void(0)" onclick="loginGoogle()"><i class="fa-brands fa-google"></i></a>
+                    </div>
                 </div>
-                <div class="input-group">
-                    <input type="email" name="correo" value="{{ old('correo') }}" required>
-                    <label>Email</label>
-                </div>
-                <div class="input-group">
-                    <input type="password" name="contrasena" required>
-                    <label>Password</label>
-                </div>
-                <button type="submit">Sign Up</button>
-                <div class="signUp-link">
-                    <p>Already have an account? <a href="#" class="signInBtn-link">Sign In</a></p>
-                </div>
-            </form>
-        </div>
 
-        <div class="form-wrapper forgot-password-form">
-            <form method="POST" action="{{ route('olvidar.post') }}">
-                @csrf
-                <h2>Forgot Password</h2>
-                <div class="input-group">
-                    <input type="email" name="correo" required>
-                    <label>Enter your Email</label>
-                </div>
-                <button type="submit">Send Reset Link</button>
                 <div class="signUp-link">
-                    <p><a href="#" class="signInBtn-link">Back to Sign In</a></p>
-                    <p><a href="#" class="changePassword-link">Change Password</a></p>
-                </div>
-            </form>
-        </div>
-
-        <div class="form-wrapper change-password-form">
-            <form method="POST" action="{{ route('actualizar.post') }}">
-                @csrf
-                <h2>Change Password</h2>
-                <div class="input-group">
-                    <input type="text" name="token" required placeholder="Ingresa el token enviado">
-                    <label>Reset Token</label>
-                </div>
-                <div class="input-group">
-                    <input type="email" name="correo" required>
-                    <label>Email</label>
-                </div>
-                <div class="input-group">
-                    <input type="password" name="contrasena" required>
-                    <label>New Password</label>
-                </div>
-                <button type="submit">Update Password</button>
-                <div class="signUp-link">
-                    <p><a href="#" class="signInBtn-link">Back to Sign In</a></p>
+                    <p><a href="{{ route('recuperar') }}" class="forgotPassword-link">Forgot Password?</a></p>
+                    <p>Don't have an account? <a href="{{ route('register') }}">Sign Up</a></p>
                 </div>
             </form>
         </div>
     </div>
 
-    <script src="{{ asset('js/script.js') }}"></script>
-
     <script>
-        const mensajeExito = "{{ session('swal_success') }}";
-        const errorValidacion = "{{ $errors->first() }}";
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnLogin');
+            btn.disabled = true;
+            btn.innerText = 'Cargando...';
 
-        if (mensajeExito) {
-            Swal.fire({
-                icon: 'success',
-                title: '¡Todo listo!',
-                text: mensajeExito,
-                confirmButtonColor: '#4e73df',
-                background: '#1b1b1b',
-                color: '#fff',      
-                timer: 3000,          
-                timerProgressBar: true
-            });
-        }
+            const formData = {
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            };
 
-        if (errorValidacion) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Atención',
-                text: errorValidacion,
-                confirmButtonColor: '#f4157e',
-                background: '#1b1b1b',
-                color: '#fff'        
-            });
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Bienvenido!',
+                        text: 'Inicio de sesión exitoso',
+                        background: '#1b1b1b',
+                        color: '#fff',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = '/home';
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.error || 'Credenciales incorrectas',
+                        background: '#1b1b1b',
+                        color: '#fff'
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de conexión',
+                    text: 'No se pudo conectar con el servidor',
+                    background: '#1b1b1b',
+                    color: '#fff'
+                });
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Sign In';
+            }
+        });
+
+        async function loginGoogle() {
+            try {
+                const response = await fetch('/api/auth/google');
+                const data = await response.json();
+                if (data.url) {
+                    window.location.href = data.url;
+                }
+            } catch (error) {
+                console.error('Error al conectar con Google:', error);
+            }
         }
     </script>
 </body>
